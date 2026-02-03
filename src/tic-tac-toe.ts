@@ -23,6 +23,10 @@ export function createGame(): GameState {
   };
 }
 
+export function canMove(state: GameState, position: number): boolean {
+  return getWinner(state) == null && state.board[position] == null
+}
+
 export function makeMove(state: GameState, position: number): GameState {
   if (getWinner(state) != null) {
     throw new Error("Game is already over")
