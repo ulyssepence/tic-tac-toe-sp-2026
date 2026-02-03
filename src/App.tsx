@@ -1,6 +1,7 @@
 import * as Fiber from '@react-three/fiber'
 import * as React from 'react'
 import * as THREE from 'three'
+import * as shader from "./shader";
 import * as ttt from "./tic-tac-toe";
 
 const MESH_SCALE = 1.0
@@ -23,43 +24,44 @@ function onMessage(state: ttt.GameState, message: Message): ttt.GameState {
 }
 
 function getMaterial(isHovered: boolean) {
-  return <meshPhongMaterial color={isHovered ? 'red' : 'blue'} />
+  return <meshPhongMaterial color={isHovered ? 'green' : 'white'} />
 }
 
 interface HoverableProperties {
   isHovered: boolean;
+  materialOverride?: React.ReactNode;
 }
 
-function Empty({ isHovered }: HoverableProperties) {
+function EmptyMesh({ isHovered, materialOverride }: HoverableProperties) {
   return (
     <mesh>
-      <boxGeometry args={[MESH_SCALE * 0.8, MESH_SCALE * 0.8, MESH_SCALE * 0.8]} />
-      {getMaterial(isHovered)}
+      <boxGeometry args={[MESH_SCALE * 0.8, MESH_SCALE * 0.8, MESH_SCALE * 0.2]} />
+      {materialOverride || getMaterial(isHovered)}
     </mesh>
   )
 }
 
-function Oh({ isHovered }: HoverableProperties) {
+function OhMesh({ isHovered, materialOverride }: HoverableProperties) {
   return (
-    <mesh rotation={[90, 0, 0]}>
-      <cylinderGeometry args={[MESH_SCALE * 0.4, MESH_SCALE * 0.4, MESH_SCALE]} />
-      {getMaterial(isHovered)}
+    <mesh rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[MESH_SCALE * 0.4, MESH_SCALE * 0.4, MESH_SCALE * 0.2]} />
+      {materialOverride || getMaterial(isHovered)}
     </mesh>
   )
 }
 
-function Ex({ isHovered }: HoverableProperties) {
+function ExMesh({ isHovered, materialOverride }: HoverableProperties) {
   return <>
     <object3D rotation={[0, 0, 45]} >
       <mesh >
-        <boxGeometry args={[MESH_SCALE * 0.2, MESH_SCALE, MESH_SCALE]} />
-        {getMaterial(isHovered)}
+        <boxGeometry args={[MESH_SCALE * 0.2, MESH_SCALE, MESH_SCALE * 0.2]} />
+        {materialOverride || getMaterial(isHovered)}
       </mesh>
     </object3D>
     <object3D rotation={[0, 0, -45]} >
       <mesh>
-        <boxGeometry args={[MESH_SCALE * 0.2, MESH_SCALE, MESH_SCALE]} />
-        {getMaterial(isHovered)}
+        <boxGeometry args={[MESH_SCALE * 0.2, MESH_SCALE, MESH_SCALE * 0.2]} />
+        {materialOverride || getMaterial(isHovered)}
       </mesh>
     </object3D>
   </>
@@ -75,9 +77,6 @@ function Cell({ coord, cell, onClickBox }: CellProperties) {
   const [isHovered, setHovered] = React.useState(false)
 
   Fiber.useFrame((_, delta) => {
-    // if (meshRef.current) {
-    //   meshRef.current.rotation.y += delta;
-    // }
   })
 
   const bottomLeft = [
@@ -88,11 +87,11 @@ function Cell({ coord, cell, onClickBox }: CellProperties) {
   const showHover = onClickBox ? isHovered : false
   let mesh: React.ReactNode
   if (cell === 'X') {
-    mesh = <Ex isHovered={showHover} />
+    mesh = <ExMesh isHovered={showHover} />
   } else if (cell === 'O') {
-    mesh = <Oh isHovered={showHover} />
+    mesh = <OhMesh isHovered={showHover} />
   } else {
-    mesh = <Empty isHovered={showHover} />
+    mesh = <EmptyMesh isHovered={showHover} />
   }
 
   const [x, y] = coord
@@ -133,15 +132,58 @@ export default function App() {
     }
   }
 
+  const winner = ttt.getWinner(state)
+  const playerMaterial = winner == null
+    ? <meshPhongMaterial color={'red'} />
+    : <meshPhongMaterial color={'blue'} />
+  const playerTurn =
+    <object3D
+      scale={[5, 5, 1]}
+      position={[0, 5, -10]}
+    >
+      { state.currentPlayer === 'X'
+        ? <ExMesh isHovered={false} materialOverride={playerMaterial} />
+        : <OhMesh isHovered={false} materialOverride={playerMaterial} />
+      }
+  </object3D>
+
+  const postProcessor = `
+      float period_secs = 45.0;
+      float band_size = 0.003;
+      float band = mod(uv.y, band_size);
+      float direction = band < (band_size / 2.0) ? 1.0 : -1.2;
+
+      vec3 original = scene(uv);
+      if (original.x == 0.0 && original.y == 0.0 && original.z == 0.0) {
+        // uv = (uv + triangle(floor_to_nearest(uv.y, band_size / 4.0)) * 6.28) * 3.0;
+        uv = uv * 3.0;
+        color = vec3(
+          scene(vec2(direction * t / period_secs, 0.0) + uv + voronoi_noise(t / 4.0 + uv *  10.0) * 0.02).x,
+          scene(vec2(direction * t / period_secs, 0.0) + uv - voronoi_noise(t / 4.0 + uv *  10.0) * 0.01).y,
+          scene(vec2(direction * t / period_secs, 0.0) + uv - voronoi_noise(t / 4.0 + uv * 100.0) * 0.01).z
+        ) * 0.05;
+      } else {
+        color = vec3(
+          scene(uv + voronoi_noise(t / 4.0 + uv * 10.0) * 0.02).x,
+          scene(uv - voronoi_noise(t / 4.0 + uv * 10.0) * 0.01).y,
+          scene(uv - voronoi_noise(t / 4.0 + uv * 100.0) * 0.01).z
+        );
+      }
+
+  `;
+
   return (
     <Fiber.Canvas
       style={{ width: '100%', height: '100%' }}
       camera={{ position: [0, 0, 0] }}
       frameloop="always"
     >
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} />
-      { cells }
+      <shader.GLSLShader code={postProcessor}>
+        <ambientLight intensity={0.5} />
+        <pointLight position={[10, 10, 10]} />
+        { cells }
+        { playerTurn }
+      </shader.GLSLShader>
     </Fiber.Canvas>
   )
 }
