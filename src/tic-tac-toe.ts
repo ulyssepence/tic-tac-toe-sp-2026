@@ -69,3 +69,7 @@ export function getWinner(state: GameState): Player | null {
 
   return null
 }
+
+export type Response =
+  | { type: 'SUCCESS', result: any }
+  | { type: 'ERROR', error: string }

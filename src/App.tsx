@@ -6,20 +6,13 @@ import * as ttt from "./tic-tac-toe";
 
 const MESH_SCALE = 1.0
 
-function initialGame(): ttt.GameState {
-  let initialGameState = ttt.createGame()
-  // initialGameState = ttt.makeMove(initialGameState, 3)
-  // initialGameState = ttt.makeMove(initialGameState, 0)
-  return initialGameState
-}
-
 type Message =
-  | { type: 'CLICKED_BOX', idx: number }
+  | { type: 'RECEIVED_GAME_STATE', game: ttt.GameState }
 
 function onMessage(state: ttt.GameState, message: Message): ttt.GameState {
   switch (message.type) {
-    case 'CLICKED_BOX':
-      return ttt.makeMove(state, message.idx)
+    case 'RECEIVED_GAME_STATE':
+      return message.game
   }
 }
 
@@ -114,14 +107,39 @@ function Cell({ coord, cell, onClickBox }: CellProperties) {
 }
 
 export default function App() {
-  let [state, dispatch] = React.useReducer(onMessage, initialGame())
+  let [state, dispatch] = React.useReducer(onMessage, ttt.createGame())
+
+  React.useEffect(() => {
+    fetch('/game', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    }).then(async resp => {
+      const resp_: ttt.Response = await resp.json()
+      if (resp_.type === 'SUCCESS') {
+        dispatch({ type: 'RECEIVED_GAME_STATE', game: resp_.result })
+      }
+    })
+  }, [])
+
+  const makeMoveRemote = async (position: number) => {
+    fetch('/move', { 
+      method: 'POST', 
+      body: JSON.stringify({ position }) ,
+      headers: { 'Content-Type': 'application/json' },
+    }).then(async resp => {
+      const resp_: ttt.Response = await resp.json()
+      if (resp_.type === 'SUCCESS') {
+        dispatch({type: 'RECEIVED_GAME_STATE', game: resp_.result })
+      }
+    })
+  }
 
   const cells = []
   for (let col = 0; col < 3; col++) {
     for (let row = 0; row < 3; row++) {
       const idx = (2 - row) * 3 + col
       const onClickBox = ttt.canMove(state, idx)
-        ? () => dispatch({type: 'CLICKED_BOX', idx })
+        ? () => makeMoveRemote(idx)
         : undefined
 
       cells.push(<Cell
@@ -141,7 +159,7 @@ export default function App() {
       scale={[5, 5, 1]}
       position={[0, 5, -10]}
     >
-      { state.currentPlayer === 'X'
+      { (winner && winner == 'X') || state.currentPlayer === 'X'
         ? <ExMesh isHovered={false} materialOverride={playerMaterial} />
         : <OhMesh isHovered={false} materialOverride={playerMaterial} />
       }
@@ -169,7 +187,6 @@ export default function App() {
           scene(uv - voronoi_noise(t / 4.0 + uv * 100.0) * 0.01).z
         );
       }
-
   `;
 
   return (

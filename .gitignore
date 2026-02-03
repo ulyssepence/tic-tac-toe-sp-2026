@@ -1,3 +1,8 @@
+assets/index.html
+assets/assets
+docs/
+.claude
+
 # Logs
 logs
 *.log
