@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createGame, makeMove, getWinner } from "./tic-tac-toe";
-import type { GameState, Board } from "./tic-tac-toe";
+import type { GameState } from "./tic-tac-toe";
 
 // Helper: apply a sequence of moves to a fresh game
 function playMoves(...positions: number[]): GameState {
