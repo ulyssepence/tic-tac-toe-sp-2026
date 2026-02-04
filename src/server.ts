@@ -1,7 +1,7 @@
 import express from 'express'
 import http from 'http'
 import path  from 'path'
-import ws from 'ws'
+import * as ws from 'ws'
 import * as play from './play'
 import * as t from './types'
 
@@ -10,7 +10,7 @@ type State = {
     players: ws.WebSocket[],
 }
 
-let state = {
+let state: State = {
     game: play.createGame(),
     players: [],
 }
@@ -28,20 +28,25 @@ const webServer = http.createServer(app)
 
 const server = new ws.WebSocketServer({ server: webServer })
 server.on('connection', (webSocket: ws.WebSocket) => {
-    webSocket.on('message', (data) => {
+    state.players.push(webSocket)
+
+    webSocket.on('message', (data: any) => {
         const message: t.ToServerMessage = JSON.parse(data)
 
-        if (webSocket.readyState !== ws.OPEN) {
-            return;
-        }
 
         switch (message.type) {
             case 'GAME':
-                webSocket.send(JSON.stringify({ type: 'GAME', game: state.game }))
+                if (webSocket.readyState === ws.WebSocket.OPEN) {
+                    webSocket.send(JSON.stringify({ type: 'GAME', game: state.game }))
+                }
                 break
             case 'MOVE':
                 state.game = play.makeMove(state.game, message.coord)
-                webSocket.send(JSON.stringify({ type: 'GAME', game: state.game }))
+                for (let player of state.players) {
+                    if (player.readyState === ws.WebSocket.OPEN) {
+                        player.send(JSON.stringify({ type: 'GAME', game: state.game }))
+                    }
+                }
                 break
         }
     })
