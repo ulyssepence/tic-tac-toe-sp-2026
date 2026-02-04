@@ -39,12 +39,24 @@ function View() {
     state.mailbox.send({ type: 'GAME' })
   }, [])
 
+  const winner = play.getWinner(state.game)
+
+  React.useEffect(() => {
+    if (!winner) return
+
+    state.audioPlayer.playSound('Winner')
+  }, [winner])
+
   const cells = []
   for (let col = 0; col < 3; col++) {
     for (let row = 0; row < 3; row++) {
       const coord: t.Coord = [col, row]
       const onClickBox = play.canMove(state.game, coord)
-        ? () => state.mailbox.send({ type: 'MOVE', coord: coord })
+        ? () => {
+          if (state.game.currentPlayer === 'X') { state.audioPlayer.playSound('Ex') }
+          else                                  { state.audioPlayer.playSound('Oh') }
+          state.mailbox.send({ type: 'MOVE', coord: coord })
+        }
         : undefined
 
       cells.push(<render.Cell
@@ -57,7 +69,7 @@ function View() {
 
   return (
     <render.Scene
-      winner={play.getWinner(state.game) || undefined}
+      winner={winner || undefined}
       currentPlayer={state.game.currentPlayer}
       cells={cells}
     />

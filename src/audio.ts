@@ -1,7 +1,9 @@
 import * as howler from 'howler'
 
 export type Clip =
-  | 'ShowGuesses'
+  | 'Ex'
+  | 'Oh'
+  | 'Winner'
 
 export interface PlayOptions {
   volume?: number

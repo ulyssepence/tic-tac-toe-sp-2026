@@ -1,4 +1,3 @@
-import * as game from "./play"
 import * as t from "./types"
 
 export class Box {
