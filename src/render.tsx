@@ -98,7 +98,7 @@ export function Cell({ coord, cell, onClickBox }: CellProperties) {
 
 export interface SceneProperties {
   currentPlayer: t.Player;
-  winner?: t.Player;
+  winner?: t.Winner;
   cells: Array<React.ReactNode>,
 }
 export function Scene({ currentPlayer, winner, cells }: SceneProperties) {
@@ -151,22 +151,28 @@ export function Scene({ currentPlayer, winner, cells }: SceneProperties) {
 
 export interface PlayerTurnProperties {
   currentPlayer: t.Player;
-  winner?: t.Player;
+  winner?: t.Winner;
 }
 export function PlayerTurn({ currentPlayer, winner }: PlayerTurnProperties) {
   const playerMaterial = winner == null
     ? <meshPhongMaterial color={'red'} />
     : <meshPhongMaterial color={'blue'} />
 
+  let winnerMesh: React.ReactNode
+  if        ((winner && winner == 'X') || (!winner && currentPlayer === 'X')) {
+    winnerMesh = <ExMesh isHovered={false} materialOverride={playerMaterial} />
+  } else if ((winner && winner == 'O') || (!winner && currentPlayer === 'O')) {
+    winnerMesh = <OhMesh isHovered={false} materialOverride={playerMaterial} />
+  } else {
+    winnerMesh = <EmptyMesh isHovered={false} materialOverride={playerMaterial} />
+  }
+
   return (
     <object3D
       scale={[5, 5, 1]}
       position={[0, 5, -10]}
     >
-      { (winner && winner == 'X') || (!winner && currentPlayer === 'X')
-        ? <ExMesh isHovered={false} materialOverride={playerMaterial} />
-        : <OhMesh isHovered={false} materialOverride={playerMaterial} />
-      }
+      { winnerMesh }
     </object3D>
   )
 }

@@ -3,6 +3,7 @@ import * as mail from "./mail"
 
 export type Coord = [number, number]
 export type Player = "X" | "O"
+export type Winner = Player | 'Draw'
 export type Cell = Player | 'Empty'
 export type Board = Cell[][]
 

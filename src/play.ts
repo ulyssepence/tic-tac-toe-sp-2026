@@ -25,18 +25,18 @@ export function makeMove(state: t.GameState, coord: [number, number]): t.GameSta
   }
 }
 
-export function getWinner(state: t.GameState): t.Player | null {
+export function getWinner(state: t.GameState): t.Winner | null {
   const players: t.Player[] = ['X',  'O']
   for (const player of players) {
     if (
       // Horizontal
+      (state.board[0][0] === player && state.board[1][0] === player && state.board[2][0] === player) ||
+      (state.board[0][1] === player && state.board[1][1] === player && state.board[2][1] === player) ||
+      (state.board[0][2] === player && state.board[1][2] === player && state.board[2][2] === player) ||
+      // Vertical
       (state.board[0][0] === player && state.board[0][1] === player && state.board[0][2] === player) ||
       (state.board[1][0] === player && state.board[1][1] === player && state.board[1][2] === player) ||
       (state.board[2][0] === player && state.board[2][1] === player && state.board[2][2] === player) ||
-      // Vertical
-      (state.board[0][0] === player && state.board[1][0] === player && state.board[2][0] === player) ||
-      (state.board[0][1] === player && state.board[1][2] === player && state.board[2][1] === player) ||
-      (state.board[0][2] === player && state.board[1][1] === player && state.board[2][2] === player) ||
       // Diagonal
       (state.board[0][0] === player && state.board[1][1] === player && state.board[2][2] === player) ||
       (state.board[0][2] === player && state.board[1][1] === player && state.board[2][0] === player)
@@ -45,5 +45,6 @@ export function getWinner(state: t.GameState): t.Player | null {
     }
   }
 
-  return null
+  const isDraw = state.board.every((column) => column.every(cell => cell != 'Empty'))
+  return isDraw ? 'Draw' : null
 }
