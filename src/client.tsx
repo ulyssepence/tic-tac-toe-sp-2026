@@ -1,15 +1,16 @@
 import * as Fiber from '@react-three/fiber'
 import * as React from 'react'
+import * as ReactDOM from "react-dom/client";
 import * as THREE from 'three'
 import * as shader from "./shader";
-import * as ttt from "./tic-tac-toe";
+import * as game from "./game";
 
 const MESH_SCALE = 1.0
 
 type Message =
-  | { type: 'RECEIVED_GAME_STATE', game: ttt.GameState }
+  | { type: 'RECEIVED_GAME_STATE', game: game.State }
 
-function onMessage(state: ttt.GameState, message: Message): ttt.GameState {
+function onMessage(state: game.State, message: Message): game.State {
   switch (message.type) {
     case 'RECEIVED_GAME_STATE':
       return message.game
@@ -62,7 +63,7 @@ function ExMesh({ isHovered, materialOverride }: HoverableProperties) {
 
 interface CellProperties {
   coord: [number, number];
-  cell: ttt.Cell;
+  cell: game.Cell;
   onClickBox: (() => void) | undefined;
 }
 function Cell({ coord, cell, onClickBox }: CellProperties) {
@@ -106,28 +107,28 @@ function Cell({ coord, cell, onClickBox }: CellProperties) {
   )
 }
 
-export default function App() {
-  let [state, dispatch] = React.useReducer(onMessage, ttt.createGame())
+function View() {
+  let [state, dispatch] = React.useReducer(onMessage, game.createGame())
 
   React.useEffect(() => {
     fetch('/game', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     }).then(async resp => {
-      const resp_: ttt.Response = await resp.json()
+      const resp_: game.Response = await resp.json()
       if (resp_.type === 'SUCCESS') {
         dispatch({ type: 'RECEIVED_GAME_STATE', game: resp_.result })
       }
     })
   }, [])
 
-  const makeMoveRemote = async (position: number) => {
+  const makeMoveRemote = async (coord: game.Coord) => {
     fetch('/move', { 
       method: 'POST', 
-      body: JSON.stringify({ position }) ,
+      body: JSON.stringify({ coord }) ,
       headers: { 'Content-Type': 'application/json' },
     }).then(async resp => {
-      const resp_: ttt.Response = await resp.json()
+      const resp_: game.Response = await resp.json()
       if (resp_.type === 'SUCCESS') {
         dispatch({type: 'RECEIVED_GAME_STATE', game: resp_.result })
       }
@@ -137,20 +138,20 @@ export default function App() {
   const cells = []
   for (let col = 0; col < 3; col++) {
     for (let row = 0; row < 3; row++) {
-      const idx = (2 - row) * 3 + col
-      const onClickBox = ttt.canMove(state, idx)
-        ? () => makeMoveRemote(idx)
+      const coord: game.Coord = [col, row]
+      const onClickBox = game.canMove(state, coord)
+        ? () => makeMoveRemote(coord)
         : undefined
 
       cells.push(<Cell
         coord={[col, row]}
         onClickBox={onClickBox}
-        cell={state.board[idx]}
+        cell={state.board[col][row]}
       />)
     }
   }
 
-  const winner = ttt.getWinner(state)
+  const winner = game.getWinner(state)
   const playerMaterial = winner == null
     ? <meshPhongMaterial color={'red'} />
     : <meshPhongMaterial color={'blue'} />
@@ -159,7 +160,7 @@ export default function App() {
       scale={[5, 5, 1]}
       position={[0, 5, -10]}
     >
-      { (winner && winner == 'X') || state.currentPlayer === 'X'
+      { (winner && winner == 'X') || (!winner && state.currentPlayer === 'X')
         ? <ExMesh isHovered={false} materialOverride={playerMaterial} />
         : <OhMesh isHovered={false} materialOverride={playerMaterial} />
       }
@@ -204,3 +205,9 @@ export default function App() {
     </Fiber.Canvas>
   )
 }
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <View />
+  </React.StrictMode>
+);
