@@ -2,7 +2,7 @@ import * as Fiber from '@react-three/fiber'
 import * as React from 'react'
 import * as THREE from 'three'
 import * as shader from "./shader"
-import * as game from "./play"
+import * as t from "./types"
 
 const MESH_SCALE = 1.0
 
@@ -52,7 +52,7 @@ function ExMesh({ isHovered, materialOverride }: HoverableProperties) {
 
 interface CellProperties {
   coord: [number, number];
-  cell: game.Cell;
+  cell: t.Cell;
   onClickBox: (() => void) | undefined;
 }
 export function Cell({ coord, cell, onClickBox }: CellProperties) {
@@ -97,8 +97,8 @@ export function Cell({ coord, cell, onClickBox }: CellProperties) {
 }
 
 export interface SceneProperties {
-  currentPlayer: game.Player;
-  winner?: game.Player;
+  currentPlayer: t.Player;
+  winner?: t.Player;
   cells: Array<React.ReactNode>,
 }
 export function Scene({ currentPlayer, winner, cells }: SceneProperties) {
@@ -150,8 +150,8 @@ export function Scene({ currentPlayer, winner, cells }: SceneProperties) {
 
 
 export interface PlayerTurnProperties {
-  currentPlayer: game.Player;
-  winner?: game.Player;
+  currentPlayer: t.Player;
+  winner?: t.Player;
 }
 export function PlayerTurn({ currentPlayer, winner }: PlayerTurnProperties) {
   const playerMaterial = winner == null
