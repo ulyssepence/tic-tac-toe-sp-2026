@@ -1,9 +1,19 @@
 import express from 'express'
 import http from 'http'
 import path  from 'path'
-import * as game from './game'
+import ws from 'ws'
+import * as play from './play'
+import * as t from './types'
 
-let state = game.createGame()
+type State = {
+    game: t.GameState,
+    players: ws.WebSocket[],
+}
+
+let state = {
+    game: play.createGame(),
+    players: [],
+}
 
 const app = express()
 app.use(express.json())
@@ -12,16 +22,29 @@ app.get('/', (req, res) => {
   res.sendFile(path.resolve('static/index.html'))
 })
 
-app.get('/game', (req, res) => {
-    res.json({ type: 'SUCCESS', result: state })
-})
-
-app.post('/move', (req, res) => {
-    state = game.makeMove(state, req.body.coord)
-    res.json({ type: 'SUCCESS', result: state })
-})
-
 app.use(express.static('./'))
 
-const server = http.createServer(app)
-server.listen(8000, '0.0.0.0')
+const webServer = http.createServer(app)
+
+const server = new ws.WebSocketServer({ server: webServer })
+server.on('connection', (webSocket: ws.WebSocket) => {
+    webSocket.on('message', (data) => {
+        const message: t.ToServerMessage = JSON.parse(data)
+
+        if (webSocket.readyState !== ws.OPEN) {
+            return;
+        }
+
+        switch (message.type) {
+            case 'GAME':
+                webSocket.send(JSON.stringify({ type: 'GAME', game: state.game }))
+                break
+            case 'MOVE':
+                state.game = play.makeMove(state.game, message.coord)
+                webSocket.send(JSON.stringify({ type: 'GAME', game: state.game }))
+                break
+        }
+    })
+})
+
+webServer.listen(8000, '0.0.0.0')

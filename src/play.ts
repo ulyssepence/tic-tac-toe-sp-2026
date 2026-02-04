@@ -1,43 +1,32 @@
-export type Coord = [number, number]
+import * as t from "./types"
 
-export type Player = "X" | "O"
-
-export type Cell = Player | 'Empty'
-
-export type Board = Cell[][]
-
-export type State = {
-  board: Board;
-  currentPlayer: Player;
-};
-
-export function createGame(): State {
+export function createGame(): t.GameState {
   return {
-    board: [
-      ['Empty', 'Empty', 'Empty'],
-      ['Empty', 'Empty', 'Empty'],
-      ['Empty', 'Empty', 'Empty'],
-    ],
-    currentPlayer: 'X',
-  };
+      board: [
+        ['Empty', 'Empty', 'Empty'],
+        ['Empty', 'Empty', 'Empty'],
+        ['Empty', 'Empty', 'Empty'],
+      ],
+      currentPlayer: 'X',
+    }
 }
 
-export function canMove(state: State, coord: Coord): boolean {
+export function canMove(state: t.GameState, coord: t.Coord): boolean {
   return getWinner(state) == null && state.board[coord[0]][coord[1]] == 'Empty'
 }
 
-export function makeMove(state: State, coord: [number, number]): State {
+export function makeMove(state: t.GameState, coord: [number, number]): t.GameState {
   const newBoard = [...state.board]
   newBoard[coord[0]][coord[1]] = state.currentPlayer
   return {
     ...state,
     board: newBoard,
-    currentPlayer: state.currentPlayer == 'X' ? 'O' : 'X'
+    currentPlayer: state.currentPlayer == 'X' ? 'O' : 'X',
   }
 }
 
-export function getWinner(state: State): Player | null {
-  const players: Player[] = ['X',  'O']
+export function getWinner(state: t.GameState): t.Player | null {
+  const players: t.Player[] = ['X',  'O']
   for (const player of players) {
     if (
       // Horizontal
@@ -58,7 +47,3 @@ export function getWinner(state: State): Player | null {
 
   return null
 }
-
-export type Response =
-  | { type: 'SUCCESS', result: any }
-  | { type: 'ERROR', error: string }
