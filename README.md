@@ -4,18 +4,12 @@ Tic Tac Toe... coming to you in Typescript now!
 
 # Install
 
-```
-bun test
+```bash
+bun install
 ```
 
 # Run locally
 
-```
-bun run dev
-```
-
-# Test locally
-
-```
-bun test
+```bash
+bun run watch
 ```

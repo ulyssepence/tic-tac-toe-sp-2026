@@ -2,7 +2,7 @@ import * as Fiber from '@react-three/fiber'
 import * as React from 'react'
 import * as THREE from 'three'
 import * as shader from "./shader"
-import * as game from "./game"
+import * as game from "./play"
 
 const MESH_SCALE = 1.0
 
